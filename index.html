@@ -220,9 +220,10 @@ input,select,textarea{font-family:inherit;font-size:13px;}
 #conflictBanner a{color:#92400e;font-weight:700;cursor:pointer;text-decoration:underline;}
 
 /* ---------- ローカルモード案内 ---------- */
+/* ---------- API未設定の警告バナー ---------- */
 #localModeBanner{
-  position:absolute;bottom:10px;left:10px;right:10px;z-index:15;background:#fef3c7;border:1px solid #fde68a;
-  color:#92400e;font-size:11.5px;padding:7px 11px;border-radius:8px;display:none;
+  position:absolute;bottom:10px;left:10px;right:10px;z-index:15;background:#fef2f2;border:1px solid #fecaca;
+  color:#991b1b;font-size:11.5px;padding:7px 11px;border-radius:8px;display:none;
 }
 #localModeBanner.show{display:block;}
 #localModeBanner button{background:none;border:none;color:#1f2d4d;font-weight:700;text-decoration:underline;font-size:11.5px;padding:0;margin-left:4px;}
@@ -265,7 +266,7 @@ input,select,textarea{font-family:inherit;font-size:13px;}
       <h1 class="brand font-display">会場設営管理システム <span class="brand-sub">飛鳥荘</span></h1>
     </div>
     <div class="topbar-right">
-      <span id="apiStatusBadge" class="api-status local">ローカルモード</span>
+      <span id="apiStatusBadge" class="api-status local">GAS URL未設定</span>
       <button id="settingsBtn" class="icon-btn" title="API設定">⚙</button>
     </div>
   </header>
@@ -430,8 +431,7 @@ input,select,textarea{font-family:inherit;font-size:13px;}
       </div>
 
       <div id="localModeBanner">
-        現在はブラウザ内のみに保存される「ローカルモード」です。スタッフ間で共有するには
-        <button type="button" id="https://script.google.com/macros/s/AKfycbz5XTPjbIoE38tDAWCk6rwuAQgpu3nFlJwq2xcUO-06bkmmcihYleRMJrugbpYjO6N_kw/exec">GAS WebアプリURLを設定</button>してください。
+        GAS WebアプリURLが未設定のため保存できません。<button type="button" id="openSettingsFromBanner">⚙設定画面でURLを入力</button>してください。
       </div>
     </main>
   </div>
@@ -478,9 +478,9 @@ input,select,textarea{font-family:inherit;font-size:13px;}
 <div id="settingsModal" class="modal-overlay hidden">
   <div class="modal-box">
     <h2>API設定</h2>
-    <p class="sub">Google Apps Script を Web アプリとしてデプロイしたURLを設定してください。未設定の場合はブラウザ内のみのローカルモードで動作します。</p>
+    <p class="sub">Google Apps Script を Web アプリとしてデプロイしたURLを設定してください。このシステムは常にスプレッドシートを正データとして保存するため、URLが未設定の間は保存・一覧表示ができません。</p>
     <div class="field">
-      <label for="https://script.google.com/macros/s/AKfycbyGz1_V-1xCA3imTHgDsJNxDLib7KQUw6sAAxX5FK-6JsjuU4VTAMEJ1ssZyNI2slCr/exec">GAS WebアプリURL</label>
+      <label for="settingsApiUrl">GAS WebアプリURL</label>
       <input id="settingsApiUrl" type="text" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
     </div>
     <div class="field">
@@ -506,9 +506,13 @@ input,select,textarea{font-family:inherit;font-size:13px;}
 
 /* ----------------------------- 設定・定数 ----------------------------- */
 
+// ここに GAS Webアプリのデプロイ URL を直接埋め込むこともできます。
+// （埋め込んでおけば、スタッフは⚙設定でURLを入力しなくても自動でGAS連携になります）
+// 例: const DEFAULT_GAS_API_URL = 'https://script.google.com/macros/s/xxxxxxxx/exec';
+const DEFAULT_GAS_API_URL = '';
+
 const LS_API_URL_KEY = 'kaijo:apiUrl';
 const LS_STAFF_KEY = 'kaijo:staffName';
-const LS_LOCAL_BOOKINGS_KEY = 'kaijo:localBookings';
 
 const VENUES = {
   '万葉':   { label: '大宴会場 万葉',       width: 1200, height: 900 },
@@ -589,11 +593,11 @@ function formatDateLabel(iso) {
   const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
   return `${d.getMonth() + 1}/${d.getDate()}(${w})`;
 }
-function getApiUrl() { return (localStorage.getItem(LS_API_URL_KEY) || '').trim(); }
+function getApiUrl() { return (localStorage.getItem(LS_API_URL_KEY) || DEFAULT_GAS_API_URL || '').trim(); }
 function setApiUrl(url) { localStorage.setItem(LS_API_URL_KEY, url.trim()); }
 function getStaffName() { return localStorage.getItem(LS_STAFF_KEY) || ''; }
 function setStaffName(n) { localStorage.setItem(LS_STAFF_KEY, n); }
-function isLocalMode() { return !getApiUrl(); }
+function isApiConfigured() { return !!getApiUrl(); }
 
 /* ----------------------------- 空の依頼オブジェクト ----------------------------- */
 
@@ -620,58 +624,34 @@ function emptyBooking(venue) {
 }
 
 /* ===========================================================================
- * API レイヤー（GASバックエンド or ローカルストレージ・フォールバック）
+ * API レイヤー（Google Apps Script のみを使用。常にスプレッドシートを正とする）
  * =========================================================================== */
+
+const NOT_CONFIGURED_ERROR = 'GAS WebアプリURLが未設定です。画面右上の⚙からURLを設定してください。';
 
 const api = {
   async list() {
-    if (isLocalMode()) return { ok: true, bookings: lsLoadAll() };
-    const url = getApiUrl() + '?action=list';
-    const res = await fetch(url);
-    return res.json();
+    if (!isApiConfigured()) return { ok: false, error: NOT_CONFIGURED_ERROR };
+    try {
+      const res = await fetch(getApiUrl() + '?action=list');
+      return await res.json();
+    } catch (err) {
+      return { ok: false, error: '通信エラー: ' + err.message };
+    }
   },
   async create(data) {
-    if (isLocalMode()) {
-      const id = genId('B');
-      const now = nowIso();
-      const booking = Object.assign({}, data, { id, createdAt: now, updatedAt: now });
-      const all = lsLoadAll();
-      all.push(booking);
-      lsSaveAll(all);
-      return { ok: true, booking };
-    }
+    if (!isApiConfigured()) return { ok: false, error: NOT_CONFIGURED_ERROR };
     return gasPost({ action: 'create', data });
   },
   async update(id, data, expectedUpdatedAt) {
-    if (isLocalMode()) {
-      const all = lsLoadAll();
-      const idx = all.findIndex((b) => b.id === id);
-      if (idx === -1) return { ok: false, error: '更新対象が見つかりません。' };
-      if (expectedUpdatedAt && all[idx].updatedAt !== expectedUpdatedAt) {
-        return { ok: false, conflict: true, error: '他のタブで先に更新されています。', booking: all[idx] };
-      }
-      const merged = Object.assign({}, all[idx], data, { id, updatedAt: nowIso() });
-      all[idx] = merged;
-      lsSaveAll(all);
-      return { ok: true, booking: merged };
-    }
+    if (!isApiConfigured()) return { ok: false, error: NOT_CONFIGURED_ERROR };
     return gasPost({ action: 'update', id, data, expectedUpdatedAt });
   },
   async remove(id) {
-    if (isLocalMode()) {
-      const all = lsLoadAll().filter((b) => b.id !== id);
-      lsSaveAll(all);
-      return { ok: true };
-    }
+    if (!isApiConfigured()) return { ok: false, error: NOT_CONFIGURED_ERROR };
     return gasPost({ action: 'delete', id });
   },
 };
-
-function lsLoadAll() {
-  try { return JSON.parse(localStorage.getItem(LS_LOCAL_BOOKINGS_KEY) || '[]'); }
-  catch (e) { return []; }
-}
-function lsSaveAll(arr) { localStorage.setItem(LS_LOCAL_BOOKINGS_KEY, JSON.stringify(arr)); }
 
 async function gasPost(payload) {
   const url = getApiUrl();
@@ -1461,8 +1441,8 @@ function switchMobileView(view) {
 
 function updateApiStatusBadge() {
   const badge = $('#apiStatusBadge');
-  if (isLocalMode()) {
-    badge.textContent = 'ローカルモード';
+  if (!isApiConfigured()) {
+    badge.textContent = 'GAS URL未設定';
     badge.className = 'api-status local';
     $('#localModeBanner').classList.add('show');
   } else {
