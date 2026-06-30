@@ -1,0 +1,1641 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>会場設営管理システム｜飛鳥荘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   会場設営管理システム - スタイル
+   ブランドカラー: インディゴ(#1f2d4d) ＋ 温かみのあるクリーム背景
+   ========================================================= */
+:root{
+  --bg:#faf6ee;
+  --fg:#221d14;
+  --accent:#1f2d4d;
+  --accent-dark:#16223b;
+  --accent-soft:#e7ebf2;
+  --line:#d8cdb4;
+  --wood:#8a6a45;
+  --wood-soft:#e8dcc8;
+  --danger:#dc2626;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo UI",sans-serif;
+  font-size:14px;
+  -webkit-tap-highlight-color:transparent;
+}
+.font-display{font-family:"Shippori Mincho",serif;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:13px;}
+
+#app{height:100%;display:flex;flex-direction:column;}
+
+/* ---------- トップバー ---------- */
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;background:#fff;border-bottom:1px solid var(--line);
+  flex-shrink:0;gap:10px;
+}
+.topbar-left{display:flex;align-items:center;gap:8px;min-width:0;}
+.brand{font-size:16px;margin:0;color:var(--accent);display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.brand-sub{font-size:11px;color:#8a8270;font-weight:400;}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.icon-btn{
+  border:none;background:transparent;color:#475569;width:32px;height:32px;
+  border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;
+}
+.icon-btn:hover{background:#f1f5f9;}
+.api-status{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;}
+.api-status.online{background:#dcfce7;color:#15803d;}
+.api-status.local{background:#fef3c7;color:#92400e;}
+
+/* ---------- モバイルタブ ---------- */
+.mobile-only{display:none;}
+#mobileTabs{border-bottom:1px solid var(--line);background:#fff;}
+.tabbar{display:flex;}
+.tab-btn{flex:1;padding:10px;border:none;background:none;font-size:13px;color:#64748b;border-bottom:2px solid transparent;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+
+/* ---------- メインレイアウト ---------- */
+#mainLayout{flex:1;display:flex;min-height:0;}
+#leftPanel{
+  width:380px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+#rightPanel{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;}
+
+/* ---------- 左パネル: サブタブ ---------- */
+.left-tabs{display:flex;border-bottom:1px solid var(--line);flex-shrink:0;}
+.left-tab-btn{flex:1;padding:9px 4px;border:none;background:#fff;font-size:12.5px;color:#64748b;border-bottom:2px solid transparent;}
+.left-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;background:#f8fafc;}
+.left-tab-content{flex:1;display:none;flex-direction:column;min-height:0;overflow:hidden;}
+.left-tab-content.active{display:flex;}
+
+/* ---------- チャット ---------- */
+.chat-log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+.chat-log::-webkit-scrollbar{width:6px;}
+.chat-log::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
+.bubble{max-width:88%;padding:8px 11px;border-radius:10px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+.bubble.user{align-self:flex-end;background:var(--accent);color:#fff;}
+.bubble.assistant{align-self:flex-start;background:#f1f5f9;color:#1e293b;}
+.bubble.hint{align-self:flex-start;background:transparent;color:#94a3b8;font-size:12px;padding:2px 4px;}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 8px;}
+.chip{font-size:11px;background:#f1f5f9;color:#334155;border:none;border-radius:999px;padding:5px 10px;}
+.chip:hover{background:#e2e8f0;}
+.chat-form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);flex-shrink:0;}
+.chat-form textarea{
+  flex:1;resize:none;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;
+  font-size:13px;line-height:1.4;max-height:120px;
+}
+.chat-form textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent);}
+.send-btn{
+  background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 16px;font-size:13px;font-weight:600;
+}
+.send-btn:hover{background:var(--accent-dark);}
+.send-btn:disabled{opacity:.4;}
+
+/* ---------- フォーム ---------- */
+.booking-form{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.field label{display:block;font-size:12px;color:#64748b;margin-bottom:3px;}
+.field input,.field select,.field textarea{
+  width:100%;border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:46px;}
+.field-row{display:flex;gap:8px;}
+.field-row .field{flex:1;min-width:0;}
+.status-select{font-weight:700;}
+.form-actions{display:flex;gap:8px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line);}
+.btn{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:8px;padding:8px 12px;font-size:13px;}
+.btn:hover{background:#f8fafc;}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+.btn.primary:hover{background:var(--accent-dark);}
+.btn.danger{color:var(--danger);border-color:#fecaca;}
+.btn.danger:hover{background:#fef2f2;}
+.btn.block{width:100%;justify-content:center;}
+.helper-text{font-size:11px;color:#94a3b8;margin-top:-4px;}
+
+/* ---------- 一覧・検索 ---------- */
+.list-filters{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.list-filters input,.list-filters select{border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;}
+.filter-row{display:flex;gap:6px;}
+.filter-row select{flex:1;min-width:0;}
+.booking-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;}
+.booking-item{
+  border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer;background:#fff;
+}
+.booking-item:hover{border-color:var(--accent);background:#f8fafc;}
+.booking-item.selected{border-color:var(--accent);background:var(--accent-soft);}
+.booking-item-top{display:flex;justify-content:space-between;align-items:center;gap:6px;}
+.booking-item-date{font-size:11px;color:#64748b;}
+.booking-item-name{font-size:13.5px;font-weight:700;color:#1e293b;margin-top:2px;}
+.booking-item-meta{font-size:11.5px;color:#64748b;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;}
+.status-badge{font-size:10.5px;padding:2px 7px;border-radius:999px;color:#fff;white-space:nowrap;}
+.empty-msg{padding:24px 12px;text-align:center;color:#94a3b8;font-size:12.5px;}
+
+/* ---------- 右パネル: ツールバー ---------- */
+#canvasToolbar{
+  position:absolute;top:10px;right:10px;left:10px;z-index:15;
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;pointer-events:none;
+}
+#canvasToolbar .toolbar-group{
+  display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.94);backdrop-filter:blur(4px);
+  border:1px solid var(--line);border-radius:9px;padding:3px;box-shadow:0 1px 4px rgba(0,0,0,.06);pointer-events:auto;
+}
+.tb-btn{
+  border:none;background:transparent;color:#334155;border-radius:6px;padding:6px 9px;font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.tb-btn:hover{background:#f1f5f9;}
+.tb-btn.danger{color:var(--danger);}
+.tb-btn.danger:hover{background:#fef2f2;}
+.zoom-label{font-size:12px;font-weight:600;min-width:38px;text-align:center;color:#334155;}
+.venue-select-tb{border:none;background:transparent;font-size:12px;font-weight:700;color:var(--accent);padding:6px 4px;}
+
+/* ---------- アイテム追加メニュー ---------- */
+.add-menu-wrap{position:relative;}
+.add-menu{
+  position:absolute;top:38px;right:0;background:#fff;border:1px solid var(--line);border-radius:9px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12);padding:4px;min-width:190px;z-index:30;display:none;max-height:300px;overflow-y:auto;
+}
+.add-menu.open{display:block;}
+.add-menu-item{
+  display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;text-align:left;
+  padding:7px 8px;border-radius:6px;font-size:12.5px;color:#334155;
+}
+.add-menu-item:hover{background:#f1f5f9;}
+.swatch{width:13px;height:13px;border-radius:3px;border:1.5px solid #94a3b8;flex-shrink:0;}
+
+/* ---------- キャンバス ---------- */
+#canvasScroll{flex:1;overflow:auto;background-color:#e9e1d2;
+  background-image:radial-gradient(circle at 1px 1px, rgba(138,106,69,.18) 1px, transparent 0);
+  background-size:22px 22px;
+}
+.canvas-pad{min-width:max-content;min-height:100%;padding:64px 30px 30px;display:flex;justify-content:center;align-items:flex-start;}
+.room-canvas{
+  position:relative;background-color:#f3ead9;flex-shrink:0;
+  box-shadow:inset 0 0 0 3px var(--accent);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(31,45,77,.06) 0px, rgba(31,45,77,.06) 1px, transparent 1px, transparent 60px),
+    repeating-linear-gradient(90deg, rgba(31,45,77,.06) 0px, rgba(31,45,77,.06) 1px, transparent 1px, transparent 60px);
+}
+.room-label{
+  position:absolute;top:-26px;left:0;font-size:12px;color:var(--accent);font-weight:700;
+}
+
+/* ---------- 配置アイテム ---------- */
+.item-shape{
+  position:absolute;display:flex;align-items:center;justify-content:center;user-select:none;
+  cursor:grab;touch-action:none;
+}
+.item-shape:active{cursor:grabbing;}
+.item-shape.selected{box-shadow:0 0 0 2px var(--accent),0 2px 8px rgba(0,0,0,.15);z-index:20;}
+.item-label{pointer-events:none;text-align:center;line-height:1.25;padding:2px;}
+.item-label .seats-line{display:block;font-weight:400;opacity:.8;}
+.seat-dot{position:absolute;width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.75);border:1px solid rgba(31,45,77,.45);pointer-events:none;}
+
+.handle{position:absolute;background:#fff;border:2px solid var(--accent);border-radius:50%;width:14px;height:14px;}
+.resize-handle{right:-7px;bottom:-7px;cursor:nwse-resize;z-index:25;}
+.rotate-handle{left:50%;top:-26px;margin-left:-7px;cursor:grab;z-index:25;}
+.rotate-stem{position:absolute;left:50%;top:-20px;width:1px;height:20px;background:var(--accent);}
+.edit-handle{
+  position:absolute;left:-7px;top:-7px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid #fff;z-index:25;
+}
+
+/* ---------- 競合バナー ---------- */
+#conflictBanner{
+  position:absolute;top:60px;left:10px;z-index:25;max-width:320px;background:#fffbeb;border:1px solid #fcd34d;
+  border-radius:9px;padding:9px 11px;font-size:12px;color:#92400e;display:none;box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+#conflictBanner.show{display:block;}
+#conflictBanner a{color:#92400e;font-weight:700;cursor:pointer;text-decoration:underline;}
+
+/* ---------- ローカルモード案内 ---------- */
+#localModeBanner{
+  position:absolute;bottom:10px;left:10px;right:10px;z-index:15;background:#fef3c7;border:1px solid #fde68a;
+  color:#92400e;font-size:11.5px;padding:7px 11px;border-radius:8px;display:none;
+}
+#localModeBanner.show{display:block;}
+#localModeBanner button{background:none;border:none;color:#1f2d4d;font-weight:700;text-decoration:underline;font-size:11.5px;padding:0;margin-left:4px;}
+
+/* ---------- モーダル ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;
+  padding:16px;z-index:100;
+}
+.modal-overlay.hidden{display:none;}
+.modal-box{background:#fff;border-radius:13px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.18);}
+.modal-box h2{margin:0 0 4px;font-size:16px;color:#1e293b;}
+.modal-box .sub{font-size:11.5px;color:#94a3b8;margin-bottom:14px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+.modal-actions-between{display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.range-row{display:flex;align-items:center;gap:8px;}
+.range-row input[type=range]{flex:1;}
+.range-val{font-size:12px;color:#64748b;width:38px;text-align:right;}
+
+/* ---------- レスポンシブ ---------- */
+@media (max-width:860px){
+  .mobile-only{display:flex;}
+  #mainLayout{flex-direction:column;}
+  #leftPanel{
+    width:100%;border-right:none;border-bottom:1px solid var(--line);
+    display:none;height:calc(100% - 0px);
+  }
+  #leftPanel.mobile-active{display:flex;}
+  #rightPanel{display:none;}
+  #rightPanel.mobile-active{display:flex;}
+  .brand-sub{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="topbar-left">
+      <h1 class="brand font-display">会場設営管理システム <span class="brand-sub">飛鳥荘</span></h1>
+    </div>
+    <div class="topbar-right">
+      <span id="apiStatusBadge" class="api-status local">ローカルモード</span>
+      <button id="settingsBtn" class="icon-btn" title="API設定">⚙</button>
+    </div>
+  </header>
+
+  <div id="mobileTabs" class="mobile-only tabbar">
+    <button data-tab="chat" class="tab-btn active">チャット・登録</button>
+    <button data-tab="canvas" class="tab-btn">レイアウト</button>
+  </div>
+
+  <div id="mainLayout">
+
+    <!-- ============ 左パネル ============ -->
+    <aside id="leftPanel" class="mobile-active">
+      <div class="left-tabs">
+        <button data-left-tab="chat" class="left-tab-btn active">チャット</button>
+        <button data-left-tab="form" class="left-tab-btn">登録・編集</button>
+        <button data-left-tab="list" class="left-tab-btn">一覧・検索</button>
+      </div>
+
+      <!-- --- チャットタブ --- -->
+      <section id="tabChat" class="left-tab-content active">
+        <div id="chatLog" class="chat-log">
+          <div class="bubble hint">例:「万葉で30名、イステーブル、スクール形式で作成」「萩茶屋を座椅子で12名に変更」「受付とマイクを追加」</div>
+        </div>
+        <div class="chat-suggestions" id="chatSuggestions"></div>
+        <form id="chatForm" class="chat-form">
+          <textarea id="chatInput" rows="1" placeholder="指示を入力..."></textarea>
+          <button type="submit" class="send-btn">送信</button>
+        </form>
+      </section>
+
+      <!-- --- 登録・編集タブ --- -->
+      <section id="tabForm" class="left-tab-content">
+        <form id="bookingForm" class="booking-form">
+          <div class="field">
+            <label for="f_eventName">宴席名</label>
+            <input id="f_eventName" type="text" placeholder="例: 鈴木家ご法事" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="f_date">利用日</label>
+              <input id="f_date" type="date" />
+            </div>
+            <div class="field">
+              <label for="f_timeRange">利用時間</label>
+              <input id="f_timeRange" type="text" placeholder="18:00〜20:00" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="f_venue">会場名</label>
+              <select id="f_venue"></select>
+            </div>
+            <div class="field">
+              <label for="f_headcount">人数</label>
+              <input id="f_headcount" type="number" min="0" max="500" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="f_layoutStyle">レイアウト形式</label>
+            <input id="f_layoutStyle" list="layoutStyleOptions" type="text" placeholder="円卓 / スクール形式 / ロの字 など" />
+            <datalist id="layoutStyleOptions">
+              <option value="円卓"></option>
+              <option value="スクール形式"></option>
+              <option value="シアター形式"></option>
+              <option value="ロの字"></option>
+              <option value="コの字"></option>
+              <option value="座礼"></option>
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="f_menu">料理内容</label>
+            <input id="f_menu" type="text" placeholder="会席料理 松　など" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="f_drink">飲み放題</label>
+              <select id="f_drink">
+                <option value="なし">なし</option>
+                <option value="あり">あり</option>
+                <option value="要相談">要相談</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f_status">設営状況</label>
+              <select id="f_status" class="status-select"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f_equipment">備品（マイク・プロジェクター等）</label>
+            <input id="f_equipment" type="text" placeholder="マイク2本、プロジェクター" />
+          </div>
+          <div class="field">
+            <label for="f_staff">担当者</label>
+            <input id="f_staff" type="text" placeholder="担当スタッフ名" />
+          </div>
+          <div class="field">
+            <label for="f_note">備考</label>
+            <textarea id="f_note" placeholder="アレルギー、車椅子対応 など"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="newBookingBtn" class="btn">新規作成</button>
+            <button type="submit" id="saveBookingBtn" class="btn primary block">保存</button>
+          </div>
+          <button type="button" id="deleteBookingBtn" class="btn danger block">この依頼を削除</button>
+        </form>
+      </section>
+
+      <!-- --- 一覧・検索タブ --- -->
+      <section id="tabList" class="left-tab-content">
+        <div class="list-filters">
+          <input id="searchKeyword" type="text" placeholder="宴席名・担当者・備考で検索" />
+          <div class="filter-row">
+            <select id="filterVenue"><option value="">全会場</option></select>
+            <select id="filterStatus"><option value="">全ステータス</option></select>
+          </div>
+        </div>
+        <div id="bookingList" class="booking-list"></div>
+      </section>
+    </aside>
+
+    <!-- ============ 右パネル（キャンバス） ============ -->
+    <main id="rightPanel" class="mobile-active">
+      <div id="canvasToolbar">
+        <div class="toolbar-group">
+          <select id="toolbarVenueSelect" class="venue-select-tb"></select>
+        </div>
+        <div class="toolbar-group">
+          <button type="button" class="tb-btn" id="zoomOutBtn">－</button>
+          <span class="zoom-label" id="zoomLabel">60%</span>
+          <button type="button" class="tb-btn" id="zoomInBtn">＋</button>
+        </div>
+        <div class="toolbar-group add-menu-wrap">
+          <button type="button" class="tb-btn" id="addItemBtn">＋ 追加</button>
+          <div id="addMenu" class="add-menu"></div>
+        </div>
+        <div class="toolbar-group">
+          <button type="button" class="tb-btn" id="autoLayoutBtn" title="人数・形式から自動配置">自動配置</button>
+        </div>
+        <div class="toolbar-group">
+          <button type="button" class="tb-btn" id="saveLayoutBtn">保存</button>
+          <button type="button" class="tb-btn" id="exportPngBtn">PNG</button>
+          <button type="button" class="tb-btn" id="exportPdfBtn">PDF</button>
+          <button type="button" class="tb-btn" id="exportJsonBtn">JSON</button>
+        </div>
+        <div class="toolbar-group">
+          <button type="button" class="tb-btn danger" id="clearItemsBtn">全消去</button>
+        </div>
+      </div>
+
+      <div id="conflictBanner">
+        他の担当者が先に更新しました。<a id="conflictReloadLink">最新の内容を読み込む</a>
+      </div>
+
+      <div id="canvasScroll">
+        <div class="canvas-pad">
+          <div id="roomCanvas" class="room-canvas">
+            <div class="room-label" id="roomLabel"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="localModeBanner">
+        現在はブラウザ内のみに保存される「ローカルモード」です。スタッフ間で共有するには
+        <button type="button" id="openSettingsFromBanner">GAS WebアプリURLを設定</button>してください。
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ アイテム編集モーダル ============ -->
+<div id="itemModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>パーツを編集</h2>
+    <p class="sub" id="itemModalType"></p>
+    <div class="field">
+      <label for="im_label">名称</label>
+      <input id="im_label" type="text" />
+    </div>
+    <div class="field" id="im_seatsField">
+      <label for="im_seats">着席人数</label>
+      <input id="im_seats" type="number" min="0" max="20" />
+    </div>
+    <div class="field" id="im_sizeField">
+      <label id="im_sizeLabel">幅 × 奥行き（cm）</label>
+      <div class="field-row">
+        <input id="im_w" type="number" min="10" max="2000" step="10" />
+        <input id="im_h" type="number" min="10" max="2000" step="10" />
+      </div>
+    </div>
+    <div class="field" id="im_rotField">
+      <label>回転</label>
+      <div class="range-row">
+        <input id="im_rotation" type="range" min="0" max="350" step="10" />
+        <span class="range-val" id="im_rotationVal">0°</span>
+      </div>
+    </div>
+    <div class="modal-actions-between">
+      <button type="button" class="btn danger" id="itemDeleteBtn">削除</button>
+      <div class="modal-actions" style="margin-top:0;">
+        <button type="button" class="btn" id="itemCancelBtn">キャンセル</button>
+        <button type="button" class="btn primary" id="itemSaveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ API設定モーダル ============ -->
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>API設定</h2>
+    <p class="sub">Google Apps Script を Web アプリとしてデプロイしたURLを設定してください。未設定の場合はブラウザ内のみのローカルモードで動作します。</p>
+    <div class="field">
+      <label for="settingsApiUrl">GAS WebアプリURL</label>
+      <input id="settingsApiUrl" type="text" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
+    </div>
+    <div class="field">
+      <label for="settingsStaffName">担当者名（更新履歴に記録されます）</label>
+      <input id="settingsStaffName" type="text" placeholder="お名前" />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="settingsCancelBtn">キャンセル</button>
+      <button type="button" class="btn primary" id="settingsSaveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* =========================================================================================
+ * 会場設営管理システム - フロントエンドJS
+ * 外部フレームワーク不使用（バニラJS）。Google Apps Script をバックエンドAPIとして利用し、
+ * GAS未設定時はブラウザの localStorage のみで動作する「ローカルモード」にフォールバックする。
+ * ========================================================================================= */
+
+/* ----------------------------- 設定・定数 ----------------------------- */
+
+const LS_API_URL_KEY = 'kaijo:apiUrl';
+const LS_STAFF_KEY = 'kaijo:staffName';
+const LS_LOCAL_BOOKINGS_KEY = 'kaijo:localBookings';
+
+const VENUES = {
+  '万葉':   { label: '大宴会場 万葉',       width: 1200, height: 900 },
+  '萩茶屋': { label: '小宴会場 萩茶屋',     width: 700,  height: 600 },
+  '白鳳':   { label: 'バンケットルーム 白鳳', width: 900,  height: 700 },
+};
+const VENUE_NAMES = Object.keys(VENUES);
+
+const STATUS_LIST = ['未確認', '確認済', '設営中', '設営完了', '変更あり', 'キャンセル'];
+const STATUS_COLORS = {
+  '未確認': '#94a3b8',
+  '確認済': '#3b82f6',
+  '設営中': '#f59e0b',
+  '設営完了': '#16a34a',
+  '変更あり': '#dc2626',
+  'キャンセル': '#64748b',
+};
+
+// パーツ（アイテム）のプリセット定義
+const ITEM_PRESETS = {
+  round_table: { label: '円卓（イステーブル）', shape: 'circle', w: 150, h: 150, seatCapacity: 8, fill: '#fdf8f0', stroke: '#1f2d4d', text: '#1f2d4d', hasSeats: true },
+  rect_table:  { label: '長テーブル（イステーブル）', shape: 'rect', w: 180, h: 45, seatCapacity: 6, fill: '#fdf8f0', stroke: '#1f2d4d', text: '#1f2d4d', hasSeats: true },
+  chair:       { label: '椅子', shape: 'rect', w: 42, h: 42, seatCapacity: 0, fill: '#ffffff', stroke: '#1f2d4d', text: '#1f2d4d', hasSeats: false },
+  zaisu:       { label: '座椅子', shape: 'rect', w: 48, h: 48, seatCapacity: 0, fill: '#fdf3df', stroke: '#9c7a45', text: '#4a3a20', hasSeats: false },
+  zataku:      { label: '座卓（座椅子席）', shape: 'rect', w: 150, h: 60, seatCapacity: 6, fill: '#fdf3df', stroke: '#9c7a45', text: '#4a3a20', hasSeats: true },
+  stage:       { label: 'ステージ', shape: 'rect', w: 360, h: 120, seatCapacity: 0, fill: '#1f2d4d', stroke: '#16223b', text: '#ffffff', hasSeats: false },
+  reception:   { label: '受付', shape: 'rect', w: 160, h: 55, seatCapacity: 0, fill: '#e8dcc8', stroke: '#9c7a45', text: '#4a3a20', hasSeats: false },
+  mc_stand:    { label: '司会台', shape: 'rect', w: 60, h: 45, seatCapacity: 0, fill: '#cbd5e1', stroke: '#64748b', text: '#1e293b', hasSeats: false },
+  mic:         { label: 'マイク', shape: 'circle', w: 30, h: 30, seatCapacity: 0, fill: '#1f2d4d', stroke: '#16223b', text: '#ffffff', hasSeats: false },
+  projector:   { label: 'プロジェクター', shape: 'rect', w: 55, h: 38, seatCapacity: 0, fill: '#334155', stroke: '#1e293b', text: '#ffffff', hasSeats: false },
+  screen:      { label: 'スクリーン', shape: 'rect', w: 240, h: 16, seatCapacity: 0, fill: '#0f172a', stroke: '#0f172a', text: '#ffffff', hasSeats: false },
+  entrance:    { label: '入口', shape: 'rect', w: 100, h: 16, seatCapacity: 0, fill: '#cbd5e1', stroke: '#64748b', text: '#1e293b', hasSeats: false },
+  text:        { label: '案内テキスト', shape: 'rect', w: 140, h: 36, seatCapacity: 0, fill: 'transparent', stroke: 'transparent', text: '#1f2d4d', hasSeats: false },
+};
+const ADD_MENU_ORDER = ['round_table', 'rect_table', 'chair', 'zaisu', 'zataku', 'stage', 'reception', 'mc_stand', 'mic', 'projector', 'screen', 'entrance', 'text'];
+
+// 「座席を構成するパーツ」種別。チャットでの再配置時にこれらだけを差し替える
+const SEATING_TYPES = ['round_table', 'rect_table', 'chair', 'zaisu', 'zataku'];
+
+const PX_PER_CM = 0.6; // ズーム100%のときの 1cm あたりのピクセル数
+
+/* ----------------------------- アプリ状態 ----------------------------- */
+
+const state = {
+  bookings: [],          // 一覧キャッシュ
+  current: null,         // 編集中の依頼（未保存の下書きも含む）
+  selectedItemId: null,
+  zoom: 0.6,
+  chatHistory: [],        // {role, content}
+  leftTab: 'chat',
+  mobileView: 'chat',     // 'chat' | 'canvas'
+};
+
+let interaction = null; // ドラッグ/リサイズ/回転の進行中操作
+
+/* ----------------------------- ユーティリティ ----------------------------- */
+
+function $(sel) { return document.querySelector(sel); }
+function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function genId(prefix) {
+  return prefix + '-' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+}
+function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+function snap10(v) { return Math.round(v / 10) * 10; }
+function nowIso() { return new Date().toISOString(); }
+function todayStr() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function formatDateLabel(iso) {
+  if (!iso) return '日付未定';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return iso;
+  const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+  return `${d.getMonth() + 1}/${d.getDate()}(${w})`;
+}
+function getApiUrl() { return (localStorage.getItem(LS_API_URL_KEY) || '').trim(); }
+function setApiUrl(url) { localStorage.setItem(LS_API_URL_KEY, url.trim()); }
+function getStaffName() { return localStorage.getItem(LS_STAFF_KEY) || ''; }
+function setStaffName(n) { localStorage.setItem(LS_STAFF_KEY, n); }
+function isLocalMode() { return !getApiUrl(); }
+
+/* ----------------------------- 空の依頼オブジェクト ----------------------------- */
+
+function emptyBooking(venue) {
+  const v = venue || VENUE_NAMES[0];
+  return {
+    id: null,
+    date: todayStr(),
+    eventName: '',
+    venue: v,
+    headcount: 0,
+    timeRange: '',
+    layoutStyle: '',
+    menu: '',
+    drinkAllYouCan: 'なし',
+    equipment: '',
+    staff: getStaffName(),
+    note: '',
+    status: '未確認',
+    items: [],
+    createdAt: null,
+    updatedAt: null,
+  };
+}
+
+/* ===========================================================================
+ * API レイヤー（GASバックエンド or ローカルストレージ・フォールバック）
+ * =========================================================================== */
+
+const api = {
+  async list() {
+    if (isLocalMode()) return { ok: true, bookings: lsLoadAll() };
+    const url = getApiUrl() + '?action=list';
+    const res = await fetch(url);
+    return res.json();
+  },
+  async create(data) {
+    if (isLocalMode()) {
+      const id = genId('B');
+      const now = nowIso();
+      const booking = Object.assign({}, data, { id, createdAt: now, updatedAt: now });
+      const all = lsLoadAll();
+      all.push(booking);
+      lsSaveAll(all);
+      return { ok: true, booking };
+    }
+    return gasPost({ action: 'create', data });
+  },
+  async update(id, data, expectedUpdatedAt) {
+    if (isLocalMode()) {
+      const all = lsLoadAll();
+      const idx = all.findIndex((b) => b.id === id);
+      if (idx === -1) return { ok: false, error: '更新対象が見つかりません。' };
+      if (expectedUpdatedAt && all[idx].updatedAt !== expectedUpdatedAt) {
+        return { ok: false, conflict: true, error: '他のタブで先に更新されています。', booking: all[idx] };
+      }
+      const merged = Object.assign({}, all[idx], data, { id, updatedAt: nowIso() });
+      all[idx] = merged;
+      lsSaveAll(all);
+      return { ok: true, booking: merged };
+    }
+    return gasPost({ action: 'update', id, data, expectedUpdatedAt });
+  },
+  async remove(id) {
+    if (isLocalMode()) {
+      const all = lsLoadAll().filter((b) => b.id !== id);
+      lsSaveAll(all);
+      return { ok: true };
+    }
+    return gasPost({ action: 'delete', id });
+  },
+};
+
+function lsLoadAll() {
+  try { return JSON.parse(localStorage.getItem(LS_LOCAL_BOOKINGS_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function lsSaveAll(arr) { localStorage.setItem(LS_LOCAL_BOOKINGS_KEY, JSON.stringify(arr)); }
+
+async function gasPost(payload) {
+  const url = getApiUrl();
+  try {
+    // Content-Type: text/plain にすることで GAS 側へのプリフライト(OPTIONS)を回避する
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (err) {
+    return { ok: false, error: '通信エラー: ' + err.message };
+  }
+}
+
+/* ===========================================================================
+ * レイアウト自動生成
+ * =========================================================================== */
+
+function generateSeatingItems(room, count, seatType, style) {
+  const margin = 50;
+  const topClear = 170; // 上部（ステージ想定スペース）を空ける
+  style = style || '';
+
+  if (seatType === '座椅子') {
+    return arrangeGrid(room, 'zataku', count, 6, margin, topClear);
+  }
+  if (style.indexOf('スクール') !== -1) {
+    return arrangeRows(room, 'rect_table', count, 3, margin, topClear, true);
+  }
+  if (style.indexOf('シアター') !== -1) {
+    return arrangeRows(room, 'chair', count, 1, margin, topClear, true);
+  }
+  if (style.indexOf('ロの字') !== -1 || style.indexOf('コの字') !== -1) {
+    return arrangeUShape(room, count, style.indexOf('ロの字') !== -1, margin, topClear);
+  }
+  // デフォルト: 円卓（イステーブル標準）
+  return arrangeGrid(room, 'round_table', count, 8, margin, topClear);
+}
+
+// テーブルをグリッド状に配置する（円卓・座卓など）
+function arrangeGrid(room, type, count, perTable, margin, topClear) {
+  const preset = ITEM_PRESETS[type];
+  const tableCount = Math.max(1, Math.ceil(count / perTable));
+  const gapX = 70, gapY = 90;
+  const usableW = room.width - margin * 2;
+  const cols = Math.max(1, Math.min(tableCount, Math.floor((usableW + gapX) / (preset.w + gapX))));
+  const rows = Math.ceil(tableCount / cols);
+  const totalW = cols * preset.w + (cols - 1) * gapX;
+  const startX = (room.width - totalW) / 2 + preset.w / 2;
+  const startY = Math.min(topClear, room.height - margin - preset.h / 2) + preset.h / 2;
+
+  const items = [];
+  let remaining = count;
+  for (let i = 0; i < tableCount; i++) {
+    const r = Math.floor(i / cols), c = i % cols;
+    const seats = Math.max(1, Math.min(perTable, remaining));
+    remaining -= seats;
+    items.push({
+      id: genId('i'),
+      type,
+      x: clamp(startX + c * (preset.w + gapX), preset.w / 2, room.width - preset.w / 2),
+      y: clamp(startY + r * (preset.h + gapY), preset.h / 2, room.height - preset.h / 2),
+      w: preset.w,
+      h: preset.h,
+      rotation: 0,
+      label: (i + 1) + '卓',
+      seats,
+    });
+  }
+  return items;
+}
+
+// 長テーブル・椅子を「前方向き」の列で並べる（スクール形式・シアター形式）
+function arrangeRows(room, type, count, perUnit, margin, topClear, forwardFacing) {
+  const preset = ITEM_PRESETS[type];
+  const unitCount = Math.max(1, Math.ceil(count / perUnit));
+  const gapX = 24, gapY = 70;
+  const usableW = room.width - margin * 2;
+  const cols = Math.max(1, Math.floor((usableW + gapX) / (preset.w + gapX)));
+  const totalW = cols * preset.w + (cols - 1) * gapX;
+  const startX = (room.width - totalW) / 2 + preset.w / 2;
+  const startY = topClear + preset.h / 2;
+
+  const items = [];
+  let remaining = count;
+  for (let i = 0; i < unitCount; i++) {
+    const r = Math.floor(i / cols), c = i % cols;
+    const seats = type === 'chair' ? 1 : Math.max(1, Math.min(perUnit, remaining));
+    if (type === 'chair') remaining -= 1; else remaining -= seats;
+    items.push({
+      id: genId('i'),
+      type,
+      x: clamp(startX + c * (preset.w + gapX), preset.w / 2, room.width - preset.w / 2),
+      y: clamp(startY + r * (preset.h + gapY), preset.h / 2, room.height - preset.h / 2),
+      w: preset.w,
+      h: preset.h,
+      rotation: 0,
+      label: type === 'chair' ? '' : (i + 1) + '卓',
+      seats: type === 'chair' ? 0 : seats,
+    });
+  }
+  return items;
+}
+
+// ロの字（四方を囲む）／コの字（三方を囲む）にテーブルを並べる簡易版
+function arrangeUShape(room, count, isRo, margin, topClear) {
+  const preset = ITEM_PRESETS.rect_table;
+  const innerW = room.width - margin * 2;
+  const innerH = room.height - margin - topClear;
+  const segLenH = Math.max(preset.w, innerW * 0.42);
+  const segLenV = Math.max(preset.w, innerH * 0.4);
+
+  const segCountH = Math.max(2, Math.round(segLenH / (preset.w + 10)));
+  const segCountV = Math.max(2, Math.round(segLenV / (preset.w + 10)));
+
+  const items = [];
+  const perSeg = Math.max(2, Math.ceil(count / (isRo ? segCountH * 2 + segCountV * 2 : segCountH + segCountV * 2)));
+  let remaining = count;
+  let n = 0;
+
+  function pushSeg(cx, cy, rot, seg) {
+    for (let i = 0; i < seg; i++) {
+      const seats = Math.max(1, Math.min(perSeg, remaining));
+      remaining -= seats;
+      n++;
+      const along = (i - (seg - 1) / 2) * (preset.w + 10);
+      const rad = (rot * Math.PI) / 180;
+      items.push({
+        id: genId('i'),
+        type: 'rect_table',
+        x: clamp(cx + along * Math.cos(rad), preset.w / 2, room.width - preset.w / 2),
+        y: clamp(cy + along * Math.sin(rad), preset.h / 2, room.height - preset.h / 2),
+        w: preset.w, h: preset.h, rotation: rot === 0 ? 0 : 90,
+        label: n + '卓', seats,
+      });
+    }
+  }
+
+  const top = topClear + preset.h;
+  const bottom = room.height - margin - preset.h;
+  const left = margin + preset.h;
+  const right = room.width - margin - preset.h;
+  const midX = room.width / 2;
+  const midY = (top + bottom) / 2;
+
+  pushSeg(midX, top, 0, segCountH);              // 上辺
+  pushSeg(left, midY, 90, segCountV);             // 左辺
+  pushSeg(right, midY, 90, segCountV);            // 右辺
+  if (isRo) pushSeg(midX, bottom, 0, segCountH);  // 下辺（ロの字のみ）
+
+  return items;
+}
+
+/* ===========================================================================
+ * チャット：自然文コマンド解析（ルールベース）
+ * =========================================================================== */
+
+const STYLE_KEYWORDS = ['スクール形式', 'シアター形式', 'ロの字', 'コの字', '円卓', '座礼', '千鳥'];
+const ADD_ITEM_KEYWORDS = [
+  ['受付', 'reception'], ['マイク', 'mic'], ['プロジェクター', 'projector'],
+  ['ステージ', 'stage'], ['舞台', 'stage'], ['司会台', 'mc_stand'], ['スクリーン', 'screen'],
+  ['座椅子', 'zaisu'], ['座卓', 'zataku'], ['円卓', 'round_table'], ['長テーブル', 'rect_table'],
+  ['椅子', 'chair'], ['入口', 'entrance'],
+];
+
+function parseChatCommand(text) {
+  const out = {
+    venue: null, headcount: null, seatType: null, style: null,
+    addTypes: [], removeTypes: [], clearAll: false,
+    intent: 'update', // 'create' | 'update'
+    raw: text,
+  };
+
+  for (const v of VENUE_NAMES) { if (text.indexOf(v) !== -1) { out.venue = v; break; } }
+
+  const numMatch = text.match(/(\d+)\s*(名|人)/);
+  if (numMatch) out.headcount = parseInt(numMatch[1], 10);
+
+  if (text.indexOf('イステーブル') !== -1) out.seatType = 'イステーブル';
+  if (text.indexOf('座椅子') !== -1 && text.indexOf('追加') === -1 && text.indexOf('削除') === -1) out.seatType = '座椅子';
+
+  for (const kw of STYLE_KEYWORDS) {
+    if (text.indexOf(kw) !== -1) { out.style = kw; break; }
+  }
+
+  if (/作成|新規|新しく作って|作って/.test(text)) out.intent = 'create';
+  if (/変更|更新/.test(text)) out.intent = 'update';
+
+  if (/全部消し|すべて消し|全消去|まっさらに/.test(text)) out.clearAll = true;
+
+  const isRemove = /削除|消して|外して|取り除/.test(text);
+  const isAdd = /追加|加えて|入れて/.test(text);
+  for (const [kw, type] of ADD_ITEM_KEYWORDS) {
+    if (text.indexOf(kw) !== -1) {
+      if (isRemove) out.removeTypes.push(type);
+      else if (isAdd) out.addTypes.push(type);
+    }
+  }
+
+  return out;
+}
+
+async function handleChatSubmit(text) {
+  text = text.trim();
+  if (!text) return;
+  pushChatMessage('user', text);
+  state.chatHistory.push({ role: 'user', content: text });
+
+  const parsed = parseChatCommand(text);
+  let booking = state.current || emptyBooking();
+  let replyParts = [];
+
+  if (parsed.clearAll) {
+    booking = Object.assign({}, booking, { items: [] });
+    replyParts.push('配置をすべて消去しました。');
+  }
+
+  const hasSeatingInstruction = parsed.venue || parsed.headcount != null || parsed.seatType || parsed.style;
+  if (hasSeatingInstruction) {
+    if (parsed.venue) booking.venue = parsed.venue;
+    if (parsed.headcount != null) booking.headcount = parsed.headcount;
+    if (parsed.seatType) booking.layoutStyleSeatType = parsed.seatType; // 内部参照用（保存はしない一時情報）
+    if (parsed.style) booking.layoutStyle = parsed.style;
+
+    const room = VENUES[booking.venue] || VENUES[VENUE_NAMES[0]];
+    const seatType = parsed.seatType || booking.layoutStyleSeatType || (booking.layoutStyle === '座礼' ? '座椅子' : 'イステーブル');
+    const count = booking.headcount || 0;
+
+    if (count > 0) {
+      const nonSeating = (booking.items || []).filter((it) => SEATING_TYPES.indexOf(it.type) === -1);
+      const seating = generateSeatingItems(room, count, seatType, booking.layoutStyle || '');
+      booking.items = nonSeating.concat(seating);
+      replyParts.push(
+        `${booking.venue}に${count}名（${seatType}${booking.layoutStyle ? '・' + booking.layoutStyle : ''}）のレイアウトを${state.current && state.current.id ? '更新' : '作成'}しました。`
+      );
+    } else {
+      replyParts.push(`${booking.venue}を選択しました。人数を教えていただければレイアウトを自動配置します。`);
+    }
+  }
+
+  if (parsed.addTypes.length) {
+    const room = VENUES[booking.venue] || VENUES[VENUE_NAMES[0]];
+    const added = [];
+    parsed.addTypes.forEach((type, idx) => {
+      const preset = ITEM_PRESETS[type];
+      if (!preset) return;
+      const existingCount = (booking.items || []).filter((it) => it.type === type).length;
+      booking.items = (booking.items || []).concat([{
+        id: genId('i'),
+        type,
+        x: clamp(room.width - 120 - (idx % 3) * 70, preset.w / 2, room.width - preset.w / 2),
+        y: clamp(room.height - 80 - Math.floor(idx / 3) * 70, preset.h / 2, room.height - preset.h / 2),
+        w: preset.w, h: preset.h, rotation: 0,
+        label: preset.label + (existingCount > 0 ? String(existingCount + 1) : ''),
+        seats: 0,
+      }]);
+      added.push(preset.label);
+    });
+    if (added.length) replyParts.push(added.join('と') + 'を追加しました。');
+  }
+
+  if (parsed.removeTypes.length) {
+    const before = (booking.items || []).length;
+    booking.items = (booking.items || []).filter((it) => parsed.removeTypes.indexOf(it.type) === -1);
+    const removedLabels = parsed.removeTypes.map((t) => (ITEM_PRESETS[t] ? ITEM_PRESETS[t].label : t));
+    if (before !== booking.items.length) replyParts.push(removedLabels.join('と') + 'を削除しました。');
+  }
+
+  if (!replyParts.length) {
+    replyParts.push('会場名・人数・レイアウト形式（例: 万葉/30名/スクール形式）を含めて指示していただくと、自動でレイアウトを作成・更新できます。');
+  }
+
+  await setCurrentBookingAndPersist(booking, { skipFormReset: false });
+  const reply = replyParts.join(' ');
+  pushChatMessage('assistant', reply);
+  state.chatHistory.push({ role: 'assistant', content: reply });
+}
+
+function pushChatMessage(role, content) {
+  const log = $('#chatLog');
+  const div = document.createElement('div');
+  div.className = 'bubble ' + (role === 'user' ? 'user' : 'assistant');
+  div.textContent = content;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+/* ===========================================================================
+ * 依頼データの読み書き・永続化
+ * =========================================================================== */
+
+async function setCurrentBookingAndPersist(booking, opts) {
+  opts = opts || {};
+  state.current = booking;
+  renderForm(booking);
+  renderCanvas();
+
+  let result;
+  if (!booking.id) {
+    result = await api.create(stripBooking(booking));
+  } else {
+    result = await api.update(booking.id, stripBooking(booking), booking.updatedAt);
+  }
+
+  if (!result.ok) {
+    if (result.conflict && result.booking) {
+      showConflictBanner(result.error || '他の担当者が先に更新しました。');
+      state.current = result.booking;
+      renderForm(state.current);
+      renderCanvas();
+    } else {
+      pushChatMessage('assistant', 'エラー: ' + (result.error || '保存に失敗しました。'));
+    }
+    return;
+  }
+  state.current = result.booking;
+  renderForm(state.current);
+  renderCanvas();
+  await refreshBookingList();
+}
+
+function stripBooking(b) {
+  // API送信用に内部一時プロパティを除外
+  const { layoutStyleSeatType, ...rest } = b;
+  return rest;
+}
+
+function showConflictBanner(msg) {
+  const el = $('#conflictBanner');
+  el.firstChild.textContent = msg + ' ';
+  el.classList.add('show');
+}
+function hideConflictBanner() { $('#conflictBanner').classList.remove('show'); }
+
+async function refreshBookingList() {
+  const res = await api.list();
+  if (res.ok) {
+    state.bookings = res.bookings || [];
+    renderBookingList();
+  }
+}
+
+async function loadBookingIntoEditor(id) {
+  const found = state.bookings.find((b) => b.id === id);
+  if (found) {
+    state.current = JSON.parse(JSON.stringify(found));
+    state.selectedItemId = null;
+    renderForm(state.current);
+    renderCanvas();
+    renderBookingList();
+  }
+}
+
+/* ===========================================================================
+ * フォーム（登録・編集タブ）
+ * =========================================================================== */
+
+function populateVenueSelects() {
+  const venueOptionsHtml = VENUE_NAMES.map((v) => `<option value="${v}">${VENUES[v].label}</option>`).join('');
+  $('#f_venue').innerHTML = venueOptionsHtml;
+  $('#toolbarVenueSelect').innerHTML = venueOptionsHtml;
+  $('#filterVenue').innerHTML = '<option value="">全会場</option>' + venueOptionsHtml;
+
+  const statusOptionsHtml = STATUS_LIST.map((s) => `<option value="${s}">${s}</option>`).join('');
+  $('#f_status').innerHTML = statusOptionsHtml;
+  $('#filterStatus').innerHTML = '<option value="">全ステータス</option>' + statusOptionsHtml;
+}
+
+function renderForm(b) {
+  $('#f_eventName').value = b.eventName || '';
+  $('#f_date').value = b.date || '';
+  $('#f_timeRange').value = b.timeRange || '';
+  $('#f_venue').value = b.venue || VENUE_NAMES[0];
+  $('#f_headcount').value = b.headcount || 0;
+  $('#f_layoutStyle').value = b.layoutStyle || '';
+  $('#f_menu').value = b.menu || '';
+  $('#f_drink').value = b.drinkAllYouCan || 'なし';
+  $('#f_status').value = b.status || '未確認';
+  $('#f_equipment').value = b.equipment || '';
+  $('#f_staff').value = b.staff || '';
+  $('#f_note').value = b.note || '';
+  $('#toolbarVenueSelect').value = b.venue || VENUE_NAMES[0];
+  $('#deleteBookingBtn').style.display = b.id ? 'block' : 'none';
+  $('#roomLabel').textContent = (VENUES[b.venue] ? VENUES[b.venue].label : b.venue) + (b.eventName ? '　' + b.eventName : '');
+}
+
+function readFormIntoBooking() {
+  const base = state.current || emptyBooking();
+  return Object.assign({}, base, {
+    eventName: $('#f_eventName').value,
+    date: $('#f_date').value,
+    timeRange: $('#f_timeRange').value,
+    venue: $('#f_venue').value,
+    headcount: parseInt($('#f_headcount').value, 10) || 0,
+    layoutStyle: $('#f_layoutStyle').value,
+    menu: $('#f_menu').value,
+    drinkAllYouCan: $('#f_drink').value,
+    status: $('#f_status').value,
+    equipment: $('#f_equipment').value,
+    staff: $('#f_staff').value,
+    note: $('#f_note').value,
+  });
+}
+
+/* ===========================================================================
+ * 一覧・検索タブ
+ * =========================================================================== */
+
+function renderBookingList() {
+  const kw = $('#searchKeyword').value.trim();
+  const venueFilter = $('#filterVenue').value;
+  const statusFilter = $('#filterStatus').value;
+
+  let list = state.bookings.slice();
+  if (venueFilter) list = list.filter((b) => b.venue === venueFilter);
+  if (statusFilter) list = list.filter((b) => b.status === statusFilter);
+  if (kw) {
+    const lower = kw.toLowerCase();
+    list = list.filter((b) =>
+      (b.eventName || '').toLowerCase().indexOf(lower) !== -1 ||
+      (b.staff || '').toLowerCase().indexOf(lower) !== -1 ||
+      (b.note || '').toLowerCase().indexOf(lower) !== -1
+    );
+  }
+  list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  const container = $('#bookingList');
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-msg">該当する設営依頼がありません。</div>';
+    return;
+  }
+  container.innerHTML = list.map((b) => {
+    const color = STATUS_COLORS[b.status] || '#94a3b8';
+    const selected = state.current && state.current.id === b.id;
+    return `
+      <div class="booking-item ${selected ? 'selected' : ''}" data-id="${b.id}">
+        <div class="booking-item-top">
+          <span class="booking-item-date">${formatDateLabel(b.date)}</span>
+          <span class="status-badge" style="background:${color}">${escapeHtml(b.status)}</span>
+        </div>
+        <div class="booking-item-name">${escapeHtml(b.eventName || '（宴席名未設定）')}</div>
+        <div class="booking-item-meta">
+          <span>${escapeHtml(b.venue || '')}</span>
+          <span>${b.headcount || 0}名</span>
+          <span>${escapeHtml(b.timeRange || '')}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  $all('.booking-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      loadBookingIntoEditor(el.getAttribute('data-id'));
+      switchLeftTab('form');
+      switchMobileView('canvas');
+    });
+  });
+}
+
+/* ===========================================================================
+ * キャンバス（会場レイアウト）描画
+ * =========================================================================== */
+
+function cmToPx(cm) { return cm * PX_PER_CM * state.zoom; }
+
+function getSeatPositions(item) {
+  const preset = ITEM_PRESETS[item.type];
+  if (!preset || !preset.hasSeats || !item.seats) return [];
+  const rad = (item.rotation * Math.PI) / 180;
+  const rotate = (px, py) => ({
+    x: item.x + px * Math.cos(rad) - py * Math.sin(rad),
+    y: item.y + px * Math.sin(rad) + py * Math.cos(rad),
+  });
+  const offset = 26;
+  const out = [];
+  if (preset.shape === 'circle') {
+    const r = item.w / 2 + offset;
+    for (let i = 0; i < item.seats; i++) {
+      const a = (2 * Math.PI * i) / item.seats - Math.PI / 2;
+      out.push(rotate(r * Math.cos(a), r * Math.sin(a)));
+    }
+    return out;
+  }
+  const top = Math.ceil(item.seats / 2);
+  const bottom = item.seats - top;
+  const stepTop = item.w / (top + 1);
+  for (let i = 0; i < top; i++) out.push(rotate(-item.w / 2 + stepTop * (i + 1), -item.h / 2 - offset));
+  const stepBottom = item.w / (Math.max(bottom, 1) + 1);
+  for (let i = 0; i < bottom; i++) out.push(rotate(-item.w / 2 + stepBottom * (i + 1), item.h / 2 + offset));
+  return out;
+}
+
+function renderCanvas() {
+  const booking = state.current;
+  const room = VENUES[(booking && booking.venue) || VENUE_NAMES[0]];
+  const roomEl = $('#roomCanvas');
+  roomEl.style.width = cmToPx(room.width) + 'px';
+  roomEl.style.height = cmToPx(room.height) + 'px';
+  $('#zoomLabel').textContent = Math.round(state.zoom * 100) + '%';
+
+  const items = (booking && booking.items) || [];
+  let html = `<div class="room-label" id="roomLabel">${escapeHtml((VENUES[booking ? booking.venue : ''] ? VENUES[booking.venue].label : '') + (booking && booking.eventName ? '　' + booking.eventName : ''))}</div>`;
+
+  // 座席ドット（テーブルより背面）
+  items.forEach((item) => {
+    getSeatPositions(item).forEach((p) => {
+      html += `<div class="seat-dot" style="left:${cmToPx(p.x) - 6}px;top:${cmToPx(p.y) - 6}px;"></div>`;
+    });
+  });
+
+  items.forEach((item) => {
+    const preset = ITEM_PRESETS[item.type] || ITEM_PRESETS.round_table;
+    const w = cmToPx(item.w), h = cmToPx(item.h);
+    const left = cmToPx(item.x) - w / 2, top = cmToPx(item.y) - h / 2;
+    const selected = item.id === state.selectedItemId;
+    const isCircle = preset.shape === 'circle';
+    const isText = item.type === 'text';
+    const fontSize = clamp(w / 8, 9, 14);
+    html += `
+      <div class="item-shape ${selected ? 'selected' : ''}" data-id="${item.id}"
+        style="left:${left}px;top:${top}px;width:${w}px;height:${h}px;
+        transform:rotate(${item.rotation}deg);
+        background:${preset.fill};
+        border:${isText ? '1px dashed ' + preset.stroke : '2px solid ' + preset.stroke};
+        border-radius:${isCircle ? '50%' : '6px'};">
+        <span class="item-label" style="color:${preset.text};font-size:${fontSize}px;font-weight:600;transform:rotate(${-item.rotation}deg);">
+          ${escapeHtml(item.label)}${item.seats > 0 ? `<span class="seats-line">${item.seats}名</span>` : ''}
+        </span>
+        ${selected ? `
+          <div class="edit-handle" data-action="edit" data-id="${item.id}">✎</div>
+          <div class="rotate-stem"></div>
+          <div class="handle rotate-handle" data-action="rotate" data-id="${item.id}"></div>
+          <div class="handle resize-handle" data-action="resize" data-id="${item.id}"></div>
+        ` : ''}
+      </div>`;
+  });
+
+  roomEl.innerHTML = html;
+}
+
+/* ----- キャンバス操作（ドラッグ・リサイズ・回転） ----- */
+
+function getRoomRect() { return $('#roomCanvas').getBoundingClientRect(); }
+
+function onCanvasPointerDown(e) {
+  const handle = e.target.closest('[data-action]');
+  const shapeEl = e.target.closest('.item-shape');
+
+  if (handle) {
+    const action = handle.getAttribute('data-action');
+    const id = handle.getAttribute('data-id');
+    if (action === 'edit') { openItemModal(id); return; }
+    const item = findItem(id);
+    if (!item) return;
+    e.stopPropagation();
+    interaction = {
+      mode: action, id,
+      startClientX: e.clientX, startClientY: e.clientY,
+      startItem: Object.assign({}, item),
+      roomRect: getRoomRect(),
+    };
+    window.addEventListener('pointermove', onWindowPointerMove);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    return;
+  }
+
+  if (shapeEl) {
+    const id = shapeEl.getAttribute('data-id');
+    state.selectedItemId = id;
+    renderCanvas();
+    const item = findItem(id);
+    interaction = {
+      mode: 'move', id,
+      startClientX: e.clientX, startClientY: e.clientY,
+      startItem: Object.assign({}, item),
+      roomRect: getRoomRect(),
+    };
+    window.addEventListener('pointermove', onWindowPointerMove);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    return;
+  }
+
+  // 空白部分クリック → 選択解除
+  if (state.selectedItemId) { state.selectedItemId = null; renderCanvas(); }
+}
+
+function onWindowPointerMove(e) {
+  if (!interaction) return;
+  const booking = state.current;
+  if (!booking) return;
+  const room = VENUES[booking.venue];
+  const item = findItem(interaction.id);
+  if (!item) return;
+  const pxPerCm = PX_PER_CM * state.zoom;
+
+  if (interaction.mode === 'move') {
+    const dxCm = (e.clientX - interaction.startClientX) / pxPerCm;
+    const dyCm = (e.clientY - interaction.startClientY) / pxPerCm;
+    item.x = clamp(snap10(interaction.startItem.x + dxCm), 0, room.width);
+    item.y = clamp(snap10(interaction.startItem.y + dyCm), 0, room.height);
+  } else if (interaction.mode === 'resize') {
+    const dxCm = (e.clientX - interaction.startClientX) / pxPerCm;
+    const dyCm = (e.clientY - interaction.startClientY) / pxPerCm;
+    const preset = ITEM_PRESETS[item.type];
+    let w = clamp(snap10(interaction.startItem.w + dxCm * 2), 10, 2000);
+    let h = preset.shape === 'circle' ? w : clamp(snap10(interaction.startItem.h + dyCm * 2), 10, 2000);
+    item.w = w; item.h = h;
+  } else if (interaction.mode === 'rotate') {
+    const cx = interaction.roomRect.left + cmToPx(item.x);
+    const cy = interaction.roomRect.top + cmToPx(item.y);
+    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI) + 90;
+    item.rotation = Math.round((((angle % 360) + 360) % 360) / 10) * 10;
+  }
+  renderCanvas();
+}
+
+function onWindowPointerUp() {
+  if (!interaction) return;
+  interaction = null;
+  window.removeEventListener('pointermove', onWindowPointerMove);
+  window.removeEventListener('pointerup', onWindowPointerUp);
+  if (state.current) setCurrentBookingAndPersist(state.current);
+}
+
+function findItem(id) {
+  if (!state.current) return null;
+  return (state.current.items || []).find((it) => it.id === id) || null;
+}
+
+/* ===========================================================================
+ * アイテム編集モーダル
+ * =========================================================================== */
+
+let modalItemId = null;
+
+function openItemModal(id) {
+  const item = findItem(id);
+  if (!item) return;
+  modalItemId = id;
+  const preset = ITEM_PRESETS[item.type];
+  $('#itemModalType').textContent = preset.label;
+  $('#im_label').value = item.label;
+  $('#im_seats').value = item.seats || 0;
+  $('#im_seatsField').style.display = preset.hasSeats ? 'block' : 'none';
+  $('#im_w').value = item.w;
+  $('#im_h').value = item.h;
+  $('#im_sizeLabel').textContent = preset.shape === 'circle' ? '直径（cm）' : '幅 × 奥行き（cm）';
+  $('#im_h').style.display = preset.shape === 'circle' ? 'none' : 'inline-block';
+  $('#im_rotField').style.display = preset.shape === 'circle' ? 'none' : 'block';
+  $('#im_rotation').value = item.rotation;
+  $('#im_rotationVal').textContent = item.rotation + '°';
+  $('#itemModal').classList.remove('hidden');
+}
+
+function closeItemModal() { $('#itemModal').classList.add('hidden'); modalItemId = null; }
+
+function saveItemModal() {
+  const item = findItem(modalItemId);
+  if (!item) return closeItemModal();
+  const preset = ITEM_PRESETS[item.type];
+  item.label = $('#im_label').value.trim() || preset.label;
+  item.seats = preset.hasSeats ? clamp(parseInt($('#im_seats').value, 10) || 0, 0, 20) : 0;
+  const w = clamp(parseInt($('#im_w').value, 10) || preset.w, 10, 2000);
+  item.w = w;
+  item.h = preset.shape === 'circle' ? w : clamp(parseInt($('#im_h').value, 10) || preset.h, 10, 2000);
+  item.rotation = preset.shape === 'circle' ? 0 : clamp(parseInt($('#im_rotation').value, 10) || 0, 0, 350);
+  closeItemModal();
+  setCurrentBookingAndPersist(state.current);
+}
+
+function deleteItemModal() {
+  if (!modalItemId || !state.current) return;
+  state.current.items = (state.current.items || []).filter((it) => it.id !== modalItemId);
+  state.selectedItemId = null;
+  closeItemModal();
+  setCurrentBookingAndPersist(state.current);
+}
+
+/* ===========================================================================
+ * アイテム追加メニュー・ツールバー
+ * =========================================================================== */
+
+function renderAddMenu() {
+  $('#addMenu').innerHTML = ADD_MENU_ORDER.map((type) => {
+    const p = ITEM_PRESETS[type];
+    const bg = p.fill === 'transparent' ? '#fff' : p.fill;
+    return `<button type="button" class="add-menu-item" data-type="${type}">
+      <span class="swatch" style="background:${bg};border-color:${p.stroke === 'transparent' ? '#94a3b8' : p.stroke}"></span>
+      ${p.label}
+    </button>`;
+  }).join('');
+}
+
+function addItemToCanvas(type) {
+  if (!state.current) state.current = emptyBooking();
+  const room = VENUES[state.current.venue] || VENUES[VENUE_NAMES[0]];
+  const preset = ITEM_PRESETS[type];
+  const existingCount = (state.current.items || []).filter((it) => it.type === type).length;
+  const newItem = {
+    id: genId('i'),
+    type,
+    x: clamp(room.width / 2 + (existingCount % 4) * 30, preset.w / 2, room.width - preset.w / 2),
+    y: clamp(room.height / 2 + (existingCount % 4) * 30, preset.h / 2, room.height - preset.h / 2),
+    w: preset.w, h: preset.h, rotation: 0,
+    label: preset.label + (existingCount > 0 ? String(existingCount + 1) : ''),
+    seats: preset.hasSeats ? preset.seatCapacity : 0,
+  };
+  state.current.items = (state.current.items || []).concat([newItem]);
+  state.selectedItemId = newItem.id;
+  setCurrentBookingAndPersist(state.current);
+  openItemModal(newItem.id);
+}
+
+/* ===========================================================================
+ * エクスポート（PNG / PDF / JSON）
+ * =========================================================================== */
+
+async function exportPng() {
+  const room = $('#roomCanvas');
+  try {
+    const canvas = await html2canvas(room, { backgroundColor: '#f3ead9', scale: 2 });
+    const link = document.createElement('a');
+    link.download = exportFileName('png');
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (err) {
+    alert('PNG出力に失敗しました: ' + err.message);
+  }
+}
+
+async function exportPdf() {
+  const room = $('#roomCanvas');
+  try {
+    const canvas = await html2canvas(room, { backgroundColor: '#f3ead9', scale: 2 });
+    const { jsPDF } = window.jspdf;
+    const imgData = canvas.toDataURL('image/png');
+    const w = canvas.width / 2, h = canvas.height / 2;
+    const pdf = new jsPDF({ orientation: w >= h ? 'landscape' : 'portrait', unit: 'pt', format: [w + 48, h + 48] });
+    pdf.setFillColor(243, 234, 217);
+    pdf.rect(0, 0, w + 48, h + 48, 'F');
+    pdf.addImage(imgData, 'PNG', 24, 24, w, h);
+    pdf.save(exportFileName('pdf'));
+  } catch (err) {
+    alert('PDF出力に失敗しました: ' + err.message);
+  }
+}
+
+function exportJson() {
+  if (!state.current) return;
+  const blob = new Blob([JSON.stringify(state.current, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = exportFileName('json');
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportFileName(ext) {
+  const b = state.current || {};
+  const name = (b.eventName || b.venue || 'venue').replace(/[\\/:*?"<>|]/g, '');
+  return `${name}-${b.date || todayStr()}.${ext}`;
+}
+
+/* ===========================================================================
+ * タブ・モバイル表示切替
+ * =========================================================================== */
+
+function switchLeftTab(tab) {
+  state.leftTab = tab;
+  $all('.left-tab-btn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-left-tab') === tab));
+  $all('.left-tab-content').forEach((s) => s.classList.remove('active'));
+  $('#tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+}
+
+function switchMobileView(view) {
+  state.mobileView = view;
+  $all('.tab-btn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === view));
+  $('#leftPanel').classList.toggle('mobile-active', view === 'chat');
+  $('#rightPanel').classList.toggle('mobile-active', view === 'canvas');
+}
+
+/* ===========================================================================
+ * API設定モーダル・ステータス表示
+ * =========================================================================== */
+
+function updateApiStatusBadge() {
+  const badge = $('#apiStatusBadge');
+  if (isLocalMode()) {
+    badge.textContent = 'ローカルモード';
+    badge.className = 'api-status local';
+    $('#localModeBanner').classList.add('show');
+  } else {
+    badge.textContent = 'スプレッドシート連携中';
+    badge.className = 'api-status online';
+    $('#localModeBanner').classList.remove('show');
+  }
+}
+
+function openSettingsModal() {
+  $('#settingsApiUrl').value = getApiUrl();
+  $('#settingsStaffName').value = getStaffName();
+  $('#settingsModal').classList.remove('hidden');
+}
+function closeSettingsModal() { $('#settingsModal').classList.add('hidden'); }
+function saveSettingsModal() {
+  setApiUrl($('#settingsApiUrl').value);
+  setStaffName($('#settingsStaffName').value.trim());
+  closeSettingsModal();
+  updateApiStatusBadge();
+  refreshBookingList();
+}
+
+/* ===========================================================================
+ * 初期化・イベントワイヤリング
+ * =========================================================================== */
+
+function init() {
+  populateVenueSelects();
+  renderAddMenu();
+  updateApiStatusBadge();
+
+  state.current = emptyBooking();
+  renderForm(state.current);
+  renderCanvas();
+  refreshBookingList();
+
+  // --- モバイルタブ ---
+  $all('.tab-btn').forEach((btn) => btn.addEventListener('click', () => switchMobileView(btn.getAttribute('data-tab'))));
+
+  // --- 左パネル サブタブ ---
+  $all('.left-tab-btn').forEach((btn) => btn.addEventListener('click', () => switchLeftTab(btn.getAttribute('data-left-tab'))));
+
+  // --- チャット ---
+  const chatInput = $('#chatInput');
+  $('#chatForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = chatInput.value;
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    handleChatSubmit(text);
+  });
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#chatForm').requestSubmit(); }
+  });
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+  });
+  const suggestions = [
+    '万葉で30名、イステーブル、スクール形式で作成',
+    '萩茶屋を座椅子で12名に変更',
+    '受付とマイクを追加',
+    '白鳳で20名、円卓で作成',
+  ];
+  $('#chatSuggestions').innerHTML = suggestions.map((s) => `<button type="button" class="chip">${escapeHtml(s)}</button>`).join('');
+  $all('.chip').forEach((chip) => chip.addEventListener('click', () => handleChatSubmit(chip.textContent)));
+
+  // --- 登録フォーム ---
+  $('#bookingForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const booking = readFormIntoBooking();
+    setCurrentBookingAndPersist(booking);
+  });
+  $('#newBookingBtn').addEventListener('click', () => {
+    state.current = emptyBooking($('#f_venue').value);
+    state.selectedItemId = null;
+    renderForm(state.current);
+    renderCanvas();
+    renderBookingList();
+  });
+  $('#deleteBookingBtn').addEventListener('click', async () => {
+    if (!state.current || !state.current.id) return;
+    if (!confirm('この設営依頼を削除しますか？この操作は元に戻せません。')) return;
+    await api.remove(state.current.id);
+    state.current = emptyBooking();
+    renderForm(state.current);
+    renderCanvas();
+    refreshBookingList();
+  });
+  $('#f_venue').addEventListener('change', () => {
+    if (state.current) { state.current.venue = $('#f_venue').value; renderCanvas(); }
+  });
+
+  // --- 一覧・検索 ---
+  $('#searchKeyword').addEventListener('input', renderBookingList);
+  $('#filterVenue').addEventListener('change', renderBookingList);
+  $('#filterStatus').addEventListener('change', renderBookingList);
+
+  // --- キャンバスツールバー ---
+  $('#zoomInBtn').addEventListener('click', () => { state.zoom = clamp(+(state.zoom + 0.1).toFixed(2), 0.2, 2); renderCanvas(); });
+  $('#zoomOutBtn').addEventListener('click', () => { state.zoom = clamp(+(state.zoom - 0.1).toFixed(2), 0.2, 2); renderCanvas(); });
+  $('#toolbarVenueSelect').addEventListener('change', () => {
+    if (!state.current) state.current = emptyBooking();
+    state.current.venue = $('#toolbarVenueSelect').value;
+    $('#f_venue').value = state.current.venue;
+    renderCanvas();
+  });
+
+  $('#addItemBtn').addEventListener('click', (e) => { e.stopPropagation(); $('#addMenu').classList.toggle('open'); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.add-menu-wrap')) $('#addMenu').classList.remove('open'); });
+  $('#addMenu').addEventListener('click', (e) => {
+    const btn = e.target.closest('.add-menu-item');
+    if (btn) { addItemToCanvas(btn.getAttribute('data-type')); $('#addMenu').classList.remove('open'); }
+  });
+
+  $('#autoLayoutBtn').addEventListener('click', () => {
+    if (!state.current) state.current = emptyBooking();
+    const room = VENUES[state.current.venue];
+    const seatType = state.current.layoutStyleSeatType || (state.current.layoutStyle === '座礼' ? '座椅子' : 'イステーブル');
+    const count = state.current.headcount || 0;
+    if (count <= 0) { alert('先に人数を入力してください。'); return; }
+    const nonSeating = (state.current.items || []).filter((it) => SEATING_TYPES.indexOf(it.type) === -1);
+    const seating = generateSeatingItems(room, count, seatType, state.current.layoutStyle || '');
+    state.current.items = nonSeating.concat(seating);
+    setCurrentBookingAndPersist(state.current);
+  });
+
+  $('#saveLayoutBtn').addEventListener('click', () => {
+    const booking = readFormIntoBooking();
+    setCurrentBookingAndPersist(booking);
+  });
+  $('#exportPngBtn').addEventListener('click', exportPng);
+  $('#exportPdfBtn').addEventListener('click', exportPdf);
+  $('#exportJsonBtn').addEventListener('click', exportJson);
+  $('#clearItemsBtn').addEventListener('click', () => {
+    if (!state.current) return;
+    if (!confirm('配置済みのパーツをすべて削除しますか？')) return;
+    state.current.items = [];
+    state.selectedItemId = null;
+    setCurrentBookingAndPersist(state.current);
+  });
+
+  // --- キャンバス操作 ---
+  $('#roomCanvas').addEventListener('pointerdown', onCanvasPointerDown);
+
+  // --- アイテム編集モーダル ---
+  $('#itemCancelBtn').addEventListener('click', closeItemModal);
+  $('#itemSaveBtn').addEventListener('click', saveItemModal);
+  $('#itemDeleteBtn').addEventListener('click', deleteItemModal);
+  $('#im_rotation').addEventListener('input', () => { $('#im_rotationVal').textContent = $('#im_rotation').value + '°'; });
+  $('#itemModal').addEventListener('click', (e) => { if (e.target.id === 'itemModal') closeItemModal(); });
+
+  // --- API設定モーダル ---
+  $('#settingsBtn').addEventListener('click', openSettingsModal);
+  $('#openSettingsFromBanner').addEventListener('click', openSettingsModal);
+  $('#settingsCancelBtn').addEventListener('click', closeSettingsModal);
+  $('#settingsSaveBtn').addEventListener('click', saveSettingsModal);
+  $('#settingsModal').addEventListener('click', (e) => { if (e.target.id === 'settingsModal') closeSettingsModal(); });
+
+  // --- 競合バナー ---
+  $('#conflictReloadLink').addEventListener('click', async () => {
+    hideConflictBanner();
+    if (state.current && state.current.id) await loadBookingIntoEditor(state.current.id);
+  });
+
+  // --- 定期的に一覧を再取得して他スタッフの更新を反映（編集中の依頼以外）---
+  setInterval(() => {
+    if (!interaction && $('#itemModal').classList.contains('hidden')) refreshBookingList();
+  }, 8000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
